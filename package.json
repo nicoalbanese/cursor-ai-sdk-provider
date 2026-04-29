@@ -1,25 +1,38 @@
 {
   "name": "cursor-ai-sdk-provider",
   "version": "0.0.1",
-  "description": "Community AI SDK provider for the Cursor SDK.",
+  "description": "Community AI SDK provider for Cursor SDK agents.",
   "type": "module",
   "license": "MIT",
+  "author": "Nico Albanese",
+  "homepage": "https://github.com/nicoalbanese/cursor-ai-sdk-provider#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nicoalbanese/cursor-ai-sdk-provider.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nicoalbanese/cursor-ai-sdk-provider/issues"
+  },
   "sideEffects": false,
   "files": [
-    "dist",
-    "README.md"
+    "dist/**/*",
+    "README.md",
+    "LICENSE"
   ],
   "exports": {
+    "./package.json": "./package.json",
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
     }
   },
-  "main": "./dist/index.js",
+  "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
+    "clean": "rm -rf dist",
     "example:basic": "node --import ./examples/load-env.mjs --import tsx examples/basic-usage.ts",
     "example:check": "node --import ./examples/load-env.mjs --import tsx examples/check-setup.ts",
     "example:cloud": "node --import ./examples/load-env.mjs --import tsx examples/cloud-agent.ts",
@@ -29,15 +42,25 @@
     "example:mcp-filesystem": "node --import ./examples/load-env.mjs --import tsx examples/mcp-filesystem.ts",
     "example:streaming": "node --import ./examples/load-env.mjs --import tsx examples/streaming.ts",
     "example:tool-streaming": "node --import ./examples/load-env.mjs --import tsx examples/tool-streaming.ts",
+    "prepublishOnly": "bun run typecheck && bun test && bun run build",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [
     "ai-sdk",
     "cursor",
+    "cursor-sdk",
+    "language-model",
+    "llm",
     "provider",
     "agents"
   ],
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "dependencies": {
     "@ai-sdk/provider": "^3.0.9",
     "@ai-sdk/provider-utils": "^4.0.24",

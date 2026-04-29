@@ -2,7 +2,7 @@
 
 > Status: quick proof of concept. This package has not been published to npm yet, and the API may change.
 
-Community AI SDK provider for the Cursor SDK public beta.
+Community AI SDK provider for the Cursor SDK public beta. This is an unofficial community package and is not affiliated with Cursor or Vercel.
 
 This package adapts Cursor agents to the AI SDK language model interface, so you can call Cursor models with `generateText` and `streamText`.
 
@@ -19,6 +19,10 @@ console.log(result.text);
 ```
 
 ## Install
+
+This package requires Node.js 18 or newer.
+
+After publishing to npm:
 
 ```bash
 bun add cursor-ai-sdk-provider ai @cursor/sdk
