@@ -1,0 +1,44 @@
+{
+  "name": "cursor-ai-sdk-provider",
+  "version": "0.0.1",
+  "description": "Community AI SDK provider for the Cursor SDK.",
+  "type": "module",
+  "license": "MIT",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsup",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [
+    "ai-sdk",
+    "cursor",
+    "provider",
+    "agents"
+  ],
+  "dependencies": {
+    "@ai-sdk/provider": "^3.0.9",
+    "@ai-sdk/provider-utils": "^4.0.24",
+    "@cursor/sdk": "^1.0.9"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.13",
+    "@types/node": "^25.6.0",
+    "ai": "^6.0.170",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3"
+  }
+}
