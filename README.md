@@ -28,6 +28,12 @@ Set `CURSOR_API_KEY`, or pass `apiKey` to `createCursor`.
 export CURSOR_API_KEY="your-key"
 ```
 
+Repository examples also load `.env.local`, so this works too:
+
+```bash
+CURSOR_API_KEY="your-key"
+```
+
 ## Local Agents
 
 By default, calls run a local Cursor agent against `process.cwd()`.
@@ -39,6 +45,20 @@ const cursor = createCursor({
   local: { cwd: '/path/to/repo' },
 });
 ```
+
+## Examples
+
+Runnable examples live in [`examples/`](examples/). From this repository, run them directly with Bun:
+
+```bash
+bun run example:check
+bun run example:basic
+bun run example:streaming
+bun run example:tool-streaming
+```
+
+These scripts use Node through `tsx`. Running the files directly with Bun's TypeScript runtime can fail because the Cursor SDK uses Node HTTP/2 transport internals.
+They load `.env.local` before running.
 
 ## Cloud Agents
 

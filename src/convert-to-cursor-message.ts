@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import type {
+  JSONObject,
   JSONValue,
   LanguageModelV3CallOptions,
   LanguageModelV3FilePart,
@@ -307,15 +308,46 @@ function formatUnknown(value: unknown): string {
 }
 
 export function toNonNullJsonValue(value: unknown): Exclude<JSONValue, null> {
+  const jsonValue = toJsonValue(value);
+  if (jsonValue !== undefined && jsonValue !== null) {
+    return jsonValue;
+  }
+
+  return formatUnknown(value);
+}
+
+function toJsonValue(value: unknown): JSONValue | undefined {
+  if (value === null) {
+    return null;
+  }
+
   if (typeof value === 'string' || typeof value === 'boolean') {
     return value;
   }
 
-  if (typeof value === 'number' && Number.isFinite(value)) {
-    return value;
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined;
   }
 
-  return formatUnknown(value);
+  if (Array.isArray(value)) {
+    return value.map((item) => toJsonValue(item) ?? formatUnknown(item));
+  }
+
+  if (isRecord(value)) {
+    const object: JSONObject = {};
+
+    for (const [key, item] of Object.entries(value)) {
+      object[key] = toJsonValue(item);
+    }
+
+    return object;
+  }
+
+  return undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 export function stringifyUnknown(value: unknown): string {

@@ -20,6 +20,15 @@
   "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsup",
+    "example:basic": "node --import ./examples/load-env.mjs --import tsx examples/basic-usage.ts",
+    "example:check": "node --import ./examples/load-env.mjs --import tsx examples/check-setup.ts",
+    "example:cloud": "node --import ./examples/load-env.mjs --import tsx examples/cloud-agent.ts",
+    "example:config": "node --import ./examples/load-env.mjs --import tsx examples/custom-config.ts",
+    "example:images": "node --import ./examples/load-env.mjs --import tsx examples/images.ts",
+    "example:limitations": "node --import ./examples/load-env.mjs --import tsx examples/limitations.ts",
+    "example:mcp-filesystem": "node --import ./examples/load-env.mjs --import tsx examples/mcp-filesystem.ts",
+    "example:streaming": "node --import ./examples/load-env.mjs --import tsx examples/streaming.ts",
+    "example:tool-streaming": "node --import ./examples/load-env.mjs --import tsx examples/tool-streaming.ts",
     "test": "bun test",
     "typecheck": "tsc --noEmit"
   },
@@ -38,7 +47,9 @@
     "@types/bun": "^1.3.13",
     "@types/node": "^25.6.0",
     "ai": "^6.0.170",
+    "dotenv": "^17.4.2",
     "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.3"
   }
 }

@@ -1,6 +1,12 @@
 import { Buffer } from 'node:buffer';
 import { describe, expect, test } from 'bun:test';
-import type { AgentOptions, Run, SDKAgent, SDKArtifact } from '@cursor/sdk';
+import type {
+  AgentOptions,
+  Run,
+  RunResult,
+  SDKAgent,
+  SDKArtifact,
+} from '@cursor/sdk';
 import type { LanguageModelV3Prompt, LanguageModelV3StreamPart } from '@ai-sdk/provider';
 import { convertToCursorMessage } from './convert-to-cursor-message';
 import { createCursor } from './cursor-language-model';
@@ -19,7 +25,7 @@ class FakeRun implements Run {
 
   constructor(
     private readonly events: SDKEvent[] = [],
-    private readonly text = 'Final answer',
+    private readonly text: string | undefined = 'Final answer',
   ) {}
 
   get status() {
@@ -27,7 +33,7 @@ class FakeRun implements Run {
   }
 
   get result() {
-    return this.text;
+    return this.text ?? '';
   }
 
   supports() {
@@ -48,14 +54,19 @@ class FakeRun implements Run {
     return [];
   }
 
-  async wait() {
-    return {
+  async wait(): Promise<RunResult> {
+    const result = {
       id: this.id,
       status: this.currentStatus,
-      result: this.text,
       model: { id: 'composer-2' },
       durationMs: 10,
     };
+
+    if (this.text !== undefined) {
+      return { ...result, result: this.text };
+    }
+
+    return result;
   }
 
   async cancel() {
@@ -167,6 +178,92 @@ describe('Cursor AI SDK provider', () => {
       params: [{ id: 'thinking', value: 'high' }],
     });
     expect(fakeAgent?.sendOptions[0]?.local).toEqual({ force: true });
+  });
+
+  test('collects generate text from stream when wait result is empty', async () => {
+    const events: SDKEvent[] = [
+      {
+        type: 'assistant',
+        agent_id: 'agent-1',
+        run_id: 'run-1',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Streamed answer' }],
+        },
+      },
+    ];
+
+    const cursor = createCursor({
+      apiKey: 'test-key',
+      agentFactory: async () => new FakeAgent(new FakeRun(events, undefined)),
+    });
+
+    const result = await cursor('composer-2').doGenerate({
+      prompt,
+      headers: { 'ai-sdk': 'internal' },
+    });
+
+    expect(result.content).toEqual([{ type: 'text', text: 'Streamed answer' }]);
+    expect(result.warnings).toEqual([]);
+  });
+
+  test('collects generate tool calls and results from stream', async () => {
+    const events: SDKEvent[] = [
+      {
+        type: 'tool_call',
+        agent_id: 'agent-1',
+        run_id: 'run-1',
+        call_id: 'tool-1',
+        name: 'Read',
+        status: 'running',
+        args: { path: 'package.json' },
+      },
+      {
+        type: 'tool_call',
+        agent_id: 'agent-1',
+        run_id: 'run-1',
+        call_id: 'tool-1',
+        name: 'Read',
+        status: 'completed',
+        result: { ok: true },
+      },
+      {
+        type: 'assistant',
+        agent_id: 'agent-1',
+        run_id: 'run-1',
+        message: {
+          role: 'assistant',
+          content: [{ type: 'text', text: 'Read package.json.' }],
+        },
+      },
+    ];
+
+    const cursor = createCursor({
+      apiKey: 'test-key',
+      agentFactory: async () => new FakeAgent(new FakeRun(events, undefined)),
+    });
+
+    const result = await cursor('composer-2').doGenerate({ prompt });
+
+    expect(result.content).toEqual([
+      {
+        type: 'tool-call',
+        toolCallId: 'tool-1',
+        toolName: 'Read',
+        input: '{"path":"package.json"}',
+        providerExecuted: true,
+        dynamic: true,
+      },
+      {
+        type: 'tool-result',
+        toolCallId: 'tool-1',
+        toolName: 'Read',
+        result: { ok: true },
+        isError: false,
+        dynamic: true,
+      },
+      { type: 'text', text: 'Read package.json.' },
+    ]);
   });
 
   test('streams Cursor thinking and assistant text events', async () => {

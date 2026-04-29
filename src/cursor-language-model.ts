@@ -6,6 +6,7 @@ import {
   type JSONValue,
   type LanguageModelV3,
   type LanguageModelV3CallOptions,
+  type LanguageModelV3Content,
   type LanguageModelV3FinishReason,
   type LanguageModelV3GenerateResult,
   type LanguageModelV3StreamPart,
@@ -19,6 +20,7 @@ import {
   Agent,
   type AgentOptions,
   type ModelParameterValue,
+  type Run,
   type SDKAgent,
 } from '@cursor/sdk';
 import {
@@ -86,8 +88,15 @@ export class CursorLanguageModel implements LanguageModelV3 {
         }
       }
 
+      const content = await collectGenerateContentFromRun(run);
       const result = await run.wait();
-      const text = result.result ?? run.result ?? '';
+      const resultText = result.result ?? run.result ?? '';
+      const finalContent: LanguageModelV3Content[] =
+        content.length > 0
+          ? content
+          : resultText.length > 0
+            ? [{ type: 'text', text: resultText }]
+            : [];
       const providerMetadata = buildProviderMetadata(
         run.agentId,
         result.id,
@@ -97,7 +106,7 @@ export class CursorLanguageModel implements LanguageModelV3 {
       );
 
       return {
-        content: text.length > 0 ? [{ type: 'text', text }] : [],
+        content: finalContent,
         finishReason: finishReasonFromStatus(result.status),
         usage: usageTracker.toLanguageModelUsage(),
         providerMetadata,
@@ -403,7 +412,6 @@ function collectCallWarnings(
   addUnsupportedWarning(warnings, options.presencePenalty, 'presencePenalty');
   addUnsupportedWarning(warnings, options.frequencyPenalty, 'frequencyPenalty');
   addUnsupportedWarning(warnings, options.seed, 'seed');
-  addUnsupportedWarning(warnings, options.headers, 'headers');
 
   if (options.tools !== undefined && options.tools.length > 0) {
     warnings.push({
@@ -440,6 +448,123 @@ function finishReasonFromStatus(
     case 'cancelled':
       return { unified: 'other', raw: status };
   }
+}
+
+async function collectGenerateContentFromRun(
+  run: Run,
+): Promise<LanguageModelV3Content[]> {
+  const content: LanguageModelV3Content[] = [];
+  const seenToolCalls = new Set<string>();
+  let generatedToolCallIndex = 0;
+
+  for await (const event of run.stream()) {
+    if (isJsonObject(event) && event.type === 'assistant') {
+      const message = event.message;
+      if (isJsonObject(message) && Array.isArray(message.content)) {
+        for (const block of message.content) {
+          if (
+            isJsonObject(block) &&
+            block.type === 'text' &&
+            typeof block.text === 'string'
+          ) {
+            content.push({ type: 'text', text: block.text });
+          }
+
+          if (
+            isJsonObject(block) &&
+            block.type === 'tool_use' &&
+            typeof block.name === 'string'
+          ) {
+            const toolCallId =
+              typeof block.id === 'string'
+                ? block.id
+                : `cursor-tool-${generatedToolCallIndex}`;
+            generatedToolCallIndex += 1;
+            addToolCallContent({
+              content,
+              seenToolCalls,
+              toolCallId,
+              toolName: block.name,
+              input: block.input,
+            });
+          }
+        }
+      }
+    }
+
+    if (isJsonObject(event) && event.type === 'thinking') {
+      const text = event.text;
+      if (typeof text === 'string') {
+        content.push({ type: 'reasoning', text });
+      }
+    }
+
+    if (isJsonObject(event) && event.type === 'tool_call') {
+      const callId = event.call_id;
+      const name = event.name;
+      const status = event.status;
+
+      if (typeof callId === 'string' && typeof name === 'string') {
+        if (status === 'running') {
+          addToolCallContent({
+            content,
+            seenToolCalls,
+            toolCallId: callId,
+            toolName: name,
+            input: event.args,
+          });
+        }
+
+        if (status === 'completed' || status === 'error') {
+          addToolCallContent({
+            content,
+            seenToolCalls,
+            toolCallId: callId,
+            toolName: name,
+            input: event.args,
+          });
+          content.push({
+            type: 'tool-result',
+            toolCallId: callId,
+            toolName: name,
+            result: toNonNullJsonValue(event.result),
+            isError: status === 'error',
+            dynamic: true,
+          });
+        }
+      }
+    }
+  }
+
+  return content;
+}
+
+function addToolCallContent({
+  content,
+  seenToolCalls,
+  toolCallId,
+  toolName,
+  input,
+}: {
+  content: LanguageModelV3Content[];
+  seenToolCalls: Set<string>;
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+}) {
+  if (seenToolCalls.has(toolCallId)) {
+    return;
+  }
+
+  seenToolCalls.add(toolCallId);
+  content.push({
+    type: 'tool-call',
+    toolCallId,
+    toolName,
+    input: stringifyUnknown(input ?? {}),
+    providerExecuted: true,
+    dynamic: true,
+  });
 }
 
 interface StreamState {
