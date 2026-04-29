@@ -1,5 +1,7 @@
 # Cursor AI SDK Provider
 
+> Status: quick proof of concept. This package has not been published to npm yet, and the API may change.
+
 Community AI SDK provider for the Cursor SDK public beta.
 
 This package adapts Cursor agents to the AI SDK language model interface, so you can call Cursor models with `generateText` and `streamText`.
@@ -30,13 +32,13 @@ export CURSOR_API_KEY="your-key"
 
 Repository examples also load `.env.local`, so this works too:
 
-```bash
+```bash filename=".env.local"
 CURSOR_API_KEY="your-key"
 ```
 
 ## Local Agents
 
-By default, calls run a local Cursor agent against `process.cwd()`.
+By default, calls create a local Cursor agent against `process.cwd()`. Your workspace files are read from your machine, and the model/runtime calls are authenticated through Cursor with `CURSOR_API_KEY`. This does not create a Cursor cloud VM unless you pass `cloud` options.
 
 ```ts
 import { createCursor } from 'cursor-ai-sdk-provider';
@@ -48,7 +50,7 @@ const cursor = createCursor({
 
 ## Examples
 
-Runnable examples live in [`examples/`](examples/). From this repository, run them directly with Bun:
+Runnable examples live in [`examples/`](examples/). From this repository, run them through the package scripts:
 
 ```bash
 bun run example:check
@@ -111,6 +113,43 @@ const cursor = createCursor({
     },
   },
 });
+```
+
+Cursor tool activity is exposed as provider-executed AI SDK tool events.
+
+For streaming calls, `textStream` only includes assistant text. Use `fullStream` to observe tool calls and results:
+
+```ts
+import { streamText } from 'ai';
+import { cursor } from 'cursor-ai-sdk-provider';
+
+const result = streamText({
+  model: cursor('composer-2'),
+  prompt: 'Inspect this repository and summarize package.json.',
+});
+
+for await (const part of result.fullStream) {
+  if (part.type === 'tool-call') {
+    console.log('Tool call:', part.toolName, part.input);
+  }
+
+  if (part.type === 'tool-result') {
+    console.log('Tool result:', part.toolName, part.output);
+  }
+}
+```
+
+For non-streaming `generateText()`, tool calls and results are available after the run finishes through the AI SDK result content and tool fields, while `result.text` remains assistant text only.
+
+```ts
+const result = await generateText({
+  model: cursor('composer-2'),
+  prompt: 'Inspect this repository and summarize package.json.',
+});
+
+console.log(result.text);
+console.log(result.toolCalls);
+console.log(result.toolResults);
 ```
 
 ## Limitations
