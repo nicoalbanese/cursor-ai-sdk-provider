@@ -46,7 +46,7 @@ bun run example:tool-streaming
 
 ## Cloud Example
 
-The cloud example requires an explicit repo URL:
+The cloud example requires an explicit repo URL connected to your Cursor account or team:
 
 ```bash
 CURSOR_EXAMPLE_REPO_URL="https://github.com/your-org/your-repo" bun run example:cloud
@@ -59,6 +59,7 @@ CURSOR_EXAMPLE_STARTING_REF="main"
 CURSOR_EXAMPLE_AUTO_PR="1"
 ```
 
+Use a plain branch, tag, or SHA for `CURSOR_EXAMPLE_STARTING_REF`; do not include `origin/`.
 `CURSOR_EXAMPLE_AUTO_PR` defaults to disabled.
 
 ## Image Example

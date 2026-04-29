@@ -69,6 +69,7 @@ They load `.env.local` before running.
 ## Cloud Agents
 
 Pass Cursor cloud options to run in Cursor-hosted or self-hosted cloud environments.
+Cloud repositories must be connected to the calling Cursor account or team, and `startingRef` should be a branch, tag, or SHA such as `main`, not a remote-qualified ref such as `origin/main`.
 
 ```ts
 const cursor = createCursor({

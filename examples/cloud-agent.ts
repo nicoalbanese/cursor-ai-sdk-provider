@@ -6,7 +6,7 @@ async function main() {
 
   if (repoUrl === undefined || repoUrl.length === 0) {
     throw new Error(
-      'Set CURSOR_EXAMPLE_REPO_URL to a repository URL before running this example.',
+      'Set CURSOR_EXAMPLE_REPO_URL to a repository URL connected to Cursor before running this example.',
     );
   }
 
