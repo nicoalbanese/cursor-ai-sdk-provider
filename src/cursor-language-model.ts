@@ -570,10 +570,17 @@ function addToolCallContent({
 interface StreamState {
   textOpen: boolean;
   reasoningOpen: boolean;
+  seenToolCalls: Set<string>;
+  generatedToolCallIndex: number;
 }
 
 function createStreamState(): StreamState {
-  return { textOpen: false, reasoningOpen: false };
+  return {
+    textOpen: false,
+    reasoningOpen: false,
+    seenToolCalls: new Set(),
+    generatedToolCallIndex: 0,
+  };
 }
 
 function convertCursorEventToStreamParts(
@@ -606,15 +613,19 @@ function convertCursorEventToStreamParts(
 
         if (block.type === 'tool_use' && typeof block.name === 'string') {
           const toolCallId =
-            typeof block.id === 'string' ? block.id : `cursor-tool-${parts.length}`;
-          const input = stringifyUnknown(block.input ?? {});
-          parts.push({
-            type: 'tool-call',
+            typeof block.id === 'string'
+              ? block.id
+              : `cursor-tool-${state.generatedToolCallIndex}`;
+          if (typeof block.id !== 'string') {
+            state.generatedToolCallIndex += 1;
+          }
+
+          addStreamToolCallPart({
+            parts,
+            state,
             toolCallId,
             toolName: block.name,
-            input,
-            providerExecuted: true,
-            dynamic: true,
+            input: block.input,
           });
         }
       }
@@ -661,17 +672,23 @@ function convertCursorEventToStreamParts(
         }
 
         parts.push({ type: 'tool-input-end', id: callId });
-        parts.push({
-          type: 'tool-call',
+        addStreamToolCallPart({
+          parts,
+          state,
           toolCallId: callId,
           toolName: name,
-          input: stringifyUnknown(event.args ?? {}),
-          providerExecuted: true,
-          dynamic: true,
+          input: event.args,
         });
       }
 
       if (status === 'completed' || status === 'error') {
+        addStreamToolCallPart({
+          parts,
+          state,
+          toolCallId: callId,
+          toolName: name,
+          input: event.args,
+        });
         parts.push({
           type: 'tool-result',
           toolCallId: callId,
@@ -689,6 +706,34 @@ function convertCursorEventToStreamParts(
   }
 
   return parts;
+}
+
+function addStreamToolCallPart({
+  parts,
+  state,
+  toolCallId,
+  toolName,
+  input,
+}: {
+  parts: LanguageModelV3StreamPart[];
+  state: StreamState;
+  toolCallId: string;
+  toolName: string;
+  input: unknown;
+}) {
+  if (state.seenToolCalls.has(toolCallId)) {
+    return;
+  }
+
+  state.seenToolCalls.add(toolCallId);
+  parts.push({
+    type: 'tool-call',
+    toolCallId,
+    toolName,
+    input: stringifyUnknown(input ?? {}),
+    providerExecuted: true,
+    dynamic: true,
+  });
 }
 
 function closeOpenStreamParts(state: StreamState): LanguageModelV3StreamPart[] {

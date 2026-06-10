@@ -266,6 +266,52 @@ describe('Cursor AI SDK provider', () => {
     ]);
   });
 
+  test('streams a tool call before a completed-only tool result', async () => {
+    const events: SDKEvent[] = [
+      {
+        type: 'tool_call',
+        agent_id: 'agent-1',
+        run_id: 'run-1',
+        call_id: 'tool-1',
+        name: 'Read',
+        status: 'completed',
+        result: { ok: true },
+      },
+    ];
+
+    const cursor = createCursor({
+      apiKey: 'test-key',
+      agentFactory: async () => new FakeAgent(new FakeRun(events)),
+    });
+
+    const result = await cursor('composer-2').doStream({ prompt });
+    const parts = await readStream(result.stream);
+
+    expect(parts).toContainEqual({
+      type: 'tool-call',
+      toolCallId: 'tool-1',
+      toolName: 'Read',
+      input: '{}',
+      providerExecuted: true,
+      dynamic: true,
+    });
+    expect(parts).toContainEqual({
+      type: 'tool-result',
+      toolCallId: 'tool-1',
+      toolName: 'Read',
+      result: { ok: true },
+      isError: false,
+      dynamic: true,
+    });
+    expect(parts.map((part) => part.type)).toEqual([
+      'stream-start',
+      'response-metadata',
+      'tool-call',
+      'tool-result',
+      'finish',
+    ]);
+  });
+
   test('streams Cursor thinking and assistant text events', async () => {
     const events: SDKEvent[] = [
       {
