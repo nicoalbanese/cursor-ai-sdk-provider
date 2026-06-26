@@ -42,8 +42,8 @@ async function main() {
             text: `Describe ${basename(filePath)} in one concise paragraph.`,
           },
           {
-            type: 'image',
-            image,
+            type: 'file',
+            data: image,
             mediaType,
           },
         ],

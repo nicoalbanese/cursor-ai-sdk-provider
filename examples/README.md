@@ -37,7 +37,7 @@ bun run example:tool-streaming
 | `check-setup.ts` | Verifies `CURSOR_API_KEY` and lists available Cursor models. |
 | `basic-usage.ts` | Runs a simple `generateText` call and prints usage plus Cursor metadata. |
 | `streaming.ts` | Streams text with `streamText` and prints simple timing stats. |
-| `tool-streaming.ts` | Prints provider-executed Cursor tool calls from `fullStream`. |
+| `tool-streaming.ts` | Prints provider-executed Cursor tool calls from `stream`. |
 | `custom-config.ts` | Shows local runtime settings, model params, and per-call provider options. |
 | `cloud-agent.ts` | Runs against Cursor cloud with a repo from environment variables. |
 | `mcp-filesystem.ts` | Configures a stdio MCP filesystem server for a local agent. |
@@ -83,7 +83,7 @@ This uses `bunx @modelcontextprotocol/server-filesystem` through Cursor's inline
 
 1. Start with `check-setup.ts`, then `basic-usage.ts`.
 2. Use `streaming.ts` for responsive UI patterns.
-3. Use `tool-streaming.ts` to understand how Cursor tool calls surface through `fullStream`.
+3. Use `tool-streaming.ts` to understand how Cursor tool calls surface through `stream`.
 4. Use `custom-config.ts` to learn local runtime and model parameter configuration.
 5. Use `mcp-filesystem.ts` and `images.ts` for agent capabilities beyond plain text.
 6. Read `limitations.ts` before relying on AI SDK sampling options or function tools.

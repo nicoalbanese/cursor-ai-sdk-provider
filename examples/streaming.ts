@@ -26,7 +26,7 @@ async function main() {
   }
 
   const usage = await result.usage;
-  const providerMetadata = await result.providerMetadata;
+  const finalStep = await result.finalStep;
   const finishedAt = Date.now();
 
   console.log('\n\nStats:');
@@ -37,7 +37,7 @@ async function main() {
   );
   console.log(`Total time: ${finishedAt - startTime}ms`);
   console.log('Usage:', usage);
-  console.log('Cursor metadata:', providerMetadata?.cursor);
+  console.log('Cursor metadata:', finalStep.providerMetadata?.cursor);
 }
 
 main().catch((error: unknown) => {
