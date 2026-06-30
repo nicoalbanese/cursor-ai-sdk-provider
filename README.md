@@ -122,7 +122,7 @@ const cursor = createCursor({
 
 Cursor tool activity is exposed as provider-executed AI SDK tool events.
 
-For streaming calls, `textStream` only includes assistant text. Use `fullStream` to observe tool calls and results:
+For streaming calls, `textStream` only includes assistant text. Use `stream` to observe tool calls and results:
 
 ```ts
 import { streamText } from 'ai';
@@ -133,7 +133,7 @@ const result = streamText({
   prompt: 'Inspect this repository and summarize package.json.',
 });
 
-for await (const part of result.fullStream) {
+for await (const part of result.stream) {
   if (part.type === 'tool-call') {
     console.log('Tool call:', part.toolName, part.input);
   }

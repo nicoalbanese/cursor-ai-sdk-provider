@@ -28,8 +28,8 @@ async function main() {
     process.stdout.write(chunk);
   }
 
-  const metadata = await result.providerMetadata;
-  console.log('\n\nCursor metadata:', metadata?.cursor);
+  const finalStep = await result.finalStep;
+  console.log('\n\nCursor metadata:', finalStep.providerMetadata?.cursor);
 }
 
 main().catch((error: unknown) => {
